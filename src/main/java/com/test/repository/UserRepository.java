@@ -12,6 +12,6 @@ import com.test.model.User;
 public interface UserRepository extends JpaRepository<User, Long> {
 
 	@Query(value = "FROM User r WHERE lower(r.email) =:email")
-	Optional<User> findByEmail(String name);
+	Optional<User> findByEmail(String email);
 
 }

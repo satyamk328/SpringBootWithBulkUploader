@@ -1,5 +1,6 @@
 package com.test.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,8 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.test.exception.ServiceException;
+import com.test.model.Role;
 import com.test.model.User;
 import com.test.repository.UserRepository;
+import com.test.service.RoleService;
 import com.test.service.UserService;
 
 @Service
@@ -16,6 +19,9 @@ public class UserServiceImpl implements UserService {
 
 	@Autowired
 	private UserRepository userRepository;
+	
+	@Autowired
+	private RoleService roleService;
 	
 	public List<User> findAll() {
 		return userRepository.findAll();
@@ -36,6 +42,12 @@ public class UserServiceImpl implements UserService {
 		if(r != null){
 			throw new ServiceException("Email is already exist. Please enter valid Email");
 		}
+		List<Role> rlist = new ArrayList<>();
+		for(Role rr : user.getRList()) {
+			Role temp =  roleService.findById(rr.getId());
+			rlist.add(temp);
+		}
+		user.setRList(rlist);
 		return userRepository.save(user);
 	}
 
@@ -47,6 +59,12 @@ public class UserServiceImpl implements UserService {
 		if(r != null && !r.getId().equals(user.getId())) {
 			throw new ServiceException("Email is already exist. Please enter valid Email");
 		}
+		List<Role> rlist = new ArrayList<>();
+		for(Role rr : user.getRList()) {
+			Role temp =  roleService.findById(rr.getId());
+			rlist.add(temp);
+		}
+		user.setRList(rlist);
 		return userRepository.save(user);
 	}
 

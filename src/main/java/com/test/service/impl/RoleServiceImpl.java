@@ -43,11 +43,13 @@ public class RoleServiceImpl implements RoleService {
 	@Override
 	@Transactional
 	public Role update(Role role) {
-		Role r = findById(role.getId());
-		if(r != null && !r.getName().equalsIgnoreCase(role.getName())) {
-			throw new ServiceException("Role Name is already exist. Please enter valid Role Name");
+		findById(role.getId());
+		Role r = roleRepo.findByName(role.getName()).orElse(null);
+		if (r != null && !r.getId().equals(role.getId())) {
+			throw new ServiceException("Rolename is already registerd!. Please enter another role.");
+		} else {
+			return roleRepo.save(role);
 		}
-		return roleRepo.save(role);
 	}
 
 	@Override

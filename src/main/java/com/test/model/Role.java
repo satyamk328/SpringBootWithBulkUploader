@@ -33,7 +33,7 @@ public class Role implements Serializable {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id", nullable = false, updatable = false)
-	private long id;
+	private Long id;
 
 	@NotNull
 	@Column(name = "name")

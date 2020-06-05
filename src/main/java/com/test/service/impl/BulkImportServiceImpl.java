@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FilenameUtils;
@@ -95,10 +96,10 @@ public class BulkImportServiceImpl implements BulkImportService {
 			if (column.length == 1 && column[0].equals("")) {
 				throw new ServiceException("Please select valid csv file");
 			}
-			List<String> exstingColumns = Arrays.asList("name", "email", "roles");
+			List<String> exstingColumns = new CopyOnWriteArrayList<String>(Arrays.asList("name", "email", "roles"));
 			// validate csv files
 			exstingColumns
-					.removeAll(Arrays.asList(column).stream().map(String::toUpperCase).collect(Collectors.toList()));
+					.removeAll(Arrays.asList(column).stream().map(String::toLowerCase).collect(Collectors.toList()));
 			if (!exstingColumns.isEmpty()) {
 				throw new ServiceException("Mendatory columns are messing. Please import valid csv file");
 			}

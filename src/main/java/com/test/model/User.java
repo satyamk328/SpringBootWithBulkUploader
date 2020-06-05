@@ -18,6 +18,9 @@ import javax.persistence.Transient;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.opencsv.bean.CsvBindByName;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -39,10 +42,12 @@ public class User implements Serializable {
 	private Long id;
 
 	@NotNull
+	@CsvBindByName(column = "Name", required = true)
 	@Column(name = "name", length = 100)
 	private String name;
 
 	@Column(name = "email", length = 150)
+	@CsvBindByName(column = "Email", required = true)
 	@Email
 	private String email;
 
@@ -50,7 +55,9 @@ public class User implements Serializable {
 	@Column(name = "password", nullable = false)
 	private String password;
 	
+	@JsonIgnore
 	@Transient
+	@CsvBindByName(column = "Roles", required = true)
 	private String roles;
 
 	@ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
