@@ -28,7 +28,7 @@ import com.test.model.Role;
 import com.test.model.User;
 import com.test.model.UserBulkImport;
 import com.test.repository.RoleRepository;
-import com.test.repository.UserBulkImportRepository;
+import com.test.repository.FileMetaDataRepository;
 import com.test.repository.UserRepository;
 import com.test.service.BulkImportService;
 import com.test.service.UserBulkImportResponse;
@@ -37,7 +37,7 @@ import com.test.service.UserBulkImportResponse;
 public class BulkImportServiceImpl implements BulkImportService {
 
 	@Autowired
-	private UserBulkImportRepository bulkRepo;
+	private FileMetaDataRepository bulkRepo;
 
 	@Autowired
 	private UserRepository userRepo;

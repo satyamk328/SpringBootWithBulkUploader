@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 import com.test.model.UserBulkImport;
 
 @Repository
-public interface UserBulkImportRepository extends JpaRepository<UserBulkImport, String> {
+public interface FileMetaDataRepository extends JpaRepository<UserBulkImport, String> {
 
 	@Query(value = "FROM UserBulkImport r WHERE r.isDelete= false AND r.isActive=true AND (lower(r.actualFileName) like %?1% or lower(r.fileType) like %?1% or lower(r.status) like %?1% )")
 	Page<UserBulkImport> findByfullTextSearch(String text, Pageable pageable);
