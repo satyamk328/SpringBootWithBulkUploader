@@ -1,0 +1,16 @@
+.metadata/*
+.sonarlint/*
+/target/
+*/.settings/
+/.springBeans
+/.classpath
+/.project
+.idea/
+*.iml
+*.log
+**/dist/
+
+# Package Files #
+*.jar
+*.war
+*.ear
