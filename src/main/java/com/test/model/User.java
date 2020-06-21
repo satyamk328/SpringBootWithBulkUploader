@@ -57,7 +57,7 @@ public class User implements Serializable {
 	
 	@JsonIgnore
 	@Transient
-	@CsvBindByName(column = "Roles", required = true)
+	@CsvBindByName(column = "roles", required = true)
 	private String roles;
 
 	@ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)

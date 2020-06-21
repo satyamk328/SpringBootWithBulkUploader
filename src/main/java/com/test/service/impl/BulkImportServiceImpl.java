@@ -1,11 +1,16 @@
 package com.test.service.impl;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -20,16 +25,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.opencsv.CSVReader;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.google.common.collect.Lists;
 import com.opencsv.bean.ColumnPositionMappingStrategy;
 import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
 import com.test.model.ErrorFile;
 import com.test.model.OutputFileDto;
 import com.test.model.Role;
 import com.test.model.User;
 import com.test.model.UserBulkImport;
-import com.test.repository.RoleRepository;
 import com.test.repository.FileMetaDataRepository;
+import com.test.repository.RoleRepository;
 import com.test.repository.UserRepository;
 import com.test.service.BulkImportService;
 import com.test.service.UserBulkImportResponse;
@@ -48,7 +57,7 @@ public class BulkImportServiceImpl implements BulkImportService {
 
 	@Value("${file.upload.root.path}")
 	private String fileUploadRootDir;
-	
+
 	@Autowired
 	private FileServerWrapperService fileWrapperService;
 
@@ -81,31 +90,19 @@ public class BulkImportServiceImpl implements BulkImportService {
 				throw new ServiceException("Invalid file type. Please select csv file");
 			}
 
-			CsvToBean<User> csv = new CsvToBean<>();
+			Reader reader = new BufferedReader(new InputStreamReader(uploadfile.getInputStream()));
 
-			CSVReader csvReader = new CSVReader(new InputStreamReader(uploadfile.getInputStream()));
-			String[] column = csvReader.readNext();
+            CsvToBean<User> csvToBean = new CsvToBeanBuilder(reader)
+                    .withType(User.class)
+                    .withIgnoreLeadingWhiteSpace(true)
+                    .build();
 
-			ColumnPositionMappingStrategy<User> mappingStrategy = new ColumnPositionMappingStrategy<>();
-			mappingStrategy.setType(User.class);
-			mappingStrategy.setColumnMapping(column);
-			csv.setCsvReader(csvReader);
-			csv.setMappingStrategy(mappingStrategy);
-			List<User> list = csv.parse();
-
-			if (column.length == 1 && column[0].equals("")) {
-				throw new ServiceException("Please select valid csv file");
-			}
-			List<String> exstingColumns = new CopyOnWriteArrayList<String>(Arrays.asList("name", "email", "roles"));
-			// validate csv files
-			exstingColumns
-					.removeAll(Arrays.asList(column).stream().map(String::toLowerCase).collect(Collectors.toList()));
-			if (!exstingColumns.isEmpty()) {
-				throw new ServiceException("Mendatory columns are messing. Please import valid csv file");
-			}
+			Iterator<User> myUserIterator = csvToBean.iterator();
 
 			List<ErrorFile> errorList = new ArrayList<>();
-			for (User user : list) {
+			while (myUserIterator.hasNext()) {
+
+				User user = myUserIterator.next();
 
 				StringBuffer buffer = new StringBuffer();
 				if (StringUtils.isBlank(user.getName())) {
@@ -113,7 +110,7 @@ public class BulkImportServiceImpl implements BulkImportService {
 				}
 				if (StringUtils.isBlank(user.getEmail())) {
 					logError(buffer, "User Email is blank");
-				} else if (user.getEmail().matches("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
+				} else if (!user.getEmail().matches("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
 						+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$")) {
 					logError(buffer, "Email is invalid");
 				} else if (StringUtils.isNoneBlank(user.getEmail())) {
@@ -134,35 +131,49 @@ public class BulkImportServiceImpl implements BulkImportService {
 						if (r == null) {
 							logError(buffer, "Role is invalid  " + str);
 							isValid = false;
-						}else {
+						} else {
 							rList.add(r);
 						}
 					}
-                    if(isValid) {
-                    	 if (buffer.length() == 0) {
- 							user.getRList().addAll(rList);
- 							user.setPassword("Test@1234");
- 							userRepo.save(user);
- 						} else {
- 							ErrorFile errorFile = new ErrorFile(user.getName(), user.getEmail(), user.getRoles(), buffer.toString());
- 							errorList.add(errorFile);
- 						}
-                    }
+					if (isValid) {
+						if (buffer.length() == 0) {
+							user.getRList().addAll(rList);
+							user.setPassword("Test@1234");
+							userRepo.save(user);
+						} else {
+							ErrorFile errorFile = new ErrorFile(user.getName(), user.getEmail(), user.getRoles(),
+									buffer.toString());
+							errorList.add(errorFile);
+						}
+					}else {
+						ErrorFile errorFile = new ErrorFile(user.getName(), user.getEmail(), user.getRoles(),
+								buffer.toString());
+						errorList.add(errorFile);
+					}
 				}
 			}
 			UserBulkImportResponse bulkImportResponse = new UserBulkImportResponse();
-            bulkImportResponse.setSuccessRecord(new Long(list.size()-errorList.size()));
-            bulkImportResponse.setSuccessRecord(new Long(errorList.size()));
-            UserBulkImport bulkImport= createFileStorage(uploadfile);
-            if(errorList.size() > 0)
-            	fileWrapperService.logErrorInFile(errorList, bulkImport);
-            Map<UserBulkImport, UserBulkImportResponse> map = new HashMap<>();
-            map.put(bulkImport, bulkImportResponse);
+
+			bulkImportResponse.setSuccessRecord(new Long(Lists.newArrayList(myUserIterator).size() - errorList.size()));
+			bulkImportResponse.setFailedRecord(new Long(errorList.size()));
+			UserBulkImport bulkImport = createFileStorage(uploadfile);
+			if (errorList.size() > 0)
+				fileWrapperService.logErrorInFile(errorList, bulkImport);
+			Map<UserBulkImport, UserBulkImportResponse> map = new HashMap<>();
+			map.put(bulkImport, bulkImportResponse);
 			return map;
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 			throw new ServiceException(e.getMessage());
 		}
+	}
+
+	private static final CsvMapper mapper = new CsvMapper();
+
+	public static <T> List<T> read(Class<T> clazz, InputStream stream) throws IOException {
+		CsvSchema schema = mapper.schemaFor(clazz).withHeader().withColumnReordering(true);
+		ObjectReader reader = mapper.readerFor(clazz).with(schema);
+		return reader.<T>readValues(stream).readAll();
 	}
 
 	private void logError(StringBuffer buffer, String str) {
@@ -178,7 +189,7 @@ public class BulkImportServiceImpl implements BulkImportService {
 		UserBulkImport temp = new UserBulkImport();
 
 		Calendar calendar = Calendar.getInstance();
-		String folderName = fileUploadRootDir + File.separator+ calendar.get(Calendar.YEAR) + File.separator
+		String folderName = fileUploadRootDir + File.separator + calendar.get(Calendar.YEAR) + File.separator
 				+ calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault());
 		temp.setFolderName(folderName);
 		temp.setActualFileName(file.getOriginalFilename());
@@ -195,7 +206,6 @@ public class BulkImportServiceImpl implements BulkImportService {
 		return bulkRepo.save(temp);
 	}
 
-	
 	@Override
 	public OutputFileDto fetchFile(String fileDetailId) {
 		UserBulkImport fileStorage = getById(fileDetailId);
