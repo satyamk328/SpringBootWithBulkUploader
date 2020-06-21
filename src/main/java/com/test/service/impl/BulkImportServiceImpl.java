@@ -2,20 +2,15 @@ package com.test.service.impl;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -25,11 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.collect.Lists;
-import com.opencsv.bean.ColumnPositionMappingStrategy;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.test.model.ErrorFile;
@@ -166,14 +157,6 @@ public class BulkImportServiceImpl implements BulkImportService {
 			System.out.println(e.getMessage());
 			throw new ServiceException(e.getMessage());
 		}
-	}
-
-	private static final CsvMapper mapper = new CsvMapper();
-
-	public static <T> List<T> read(Class<T> clazz, InputStream stream) throws IOException {
-		CsvSchema schema = mapper.schemaFor(clazz).withHeader().withColumnReordering(true);
-		ObjectReader reader = mapper.readerFor(clazz).with(schema);
-		return reader.<T>readValues(stream).readAll();
 	}
 
 	private void logError(StringBuffer buffer, String str) {
